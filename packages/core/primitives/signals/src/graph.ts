@@ -180,6 +180,22 @@ export interface ReactiveNode {
    * Called when a signal is read within this consumer.
    */
   consumerOnSignalRead(node: unknown): void;
+
+  /**
+   * Called when the signal becomes "live"
+   */
+  watched?(): void;
+
+  /**
+   * Called when the signal stops being "live"
+   */
+  unwatched?(): void;
+
+  /**
+   * Optional extra data for embedder of this signal library.
+   * Sent to various callbacks as the this value.
+   */
+  wrapper?: any;
 }
 
 interface ConsumerNode extends ReactiveNode {
@@ -429,6 +445,7 @@ function producerAddLiveConsumer(
   assertProducerNode(node);
   assertConsumerNode(node);
   if (node.liveConsumerNode.length === 0) {
+    node.watched?.call(node.wrapper);
     // When going from 0 to 1 live consumers, we become a live consumer to our producers.
     for (let i = 0; i < node.producerNode.length; i++) {
       node.producerIndexOfThis[i] = producerAddLiveConsumer(node.producerNode[i], node, i);
@@ -441,7 +458,7 @@ function producerAddLiveConsumer(
 /**
  * Remove the live consumer at `idx`.
  */
-function producerRemoveLiveConsumerAtIndex(node: ReactiveNode, idx: number): void {
+export function producerRemoveLiveConsumerAtIndex(node: ReactiveNode, idx: number): void {
   assertProducerNode(node);
   assertConsumerNode(node);
 
@@ -454,6 +471,7 @@ function producerRemoveLiveConsumerAtIndex(node: ReactiveNode, idx: number): voi
     // When removing the last live consumer, we will no longer be live. We need to remove
     // ourselves from our producers' tracking (which may cause consumer-producers to lose
     // liveness as well).
+    node.unwatched?.call(node.wrapper);
     for (let i = 0; i < node.producerNode.length; i++) {
       producerRemoveLiveConsumerAtIndex(node.producerNode[i], node.producerIndexOfThis[i]);
     }
@@ -484,13 +502,13 @@ function consumerIsLive(node: ReactiveNode): boolean {
 }
 
 
-function assertConsumerNode(node: ReactiveNode): asserts node is ConsumerNode {
+export function assertConsumerNode(node: ReactiveNode): asserts node is ConsumerNode {
   node.producerNode ??= [];
   node.producerIndexOfThis ??= [];
   node.producerLastReadVersion ??= [];
 }
 
-function assertProducerNode(node: ReactiveNode): asserts node is ProducerNode {
+export function assertProducerNode(node: ReactiveNode): asserts node is ProducerNode {
   node.liveConsumerNode ??= [];
   node.liveConsumerIndexOfThis ??= [];
 }

@@ -65,7 +65,7 @@ export function signalSetFn<T>(node: SignalNode<T>, newValue: T) {
     throwInvalidWriteToSignalError();
   }
 
-  if (!node.equal(node.value, newValue)) {
+  if (!node.equal.call(node.wrapper, node.value, newValue)) {
     node.value = newValue;
     signalValueChanged(node);
   }

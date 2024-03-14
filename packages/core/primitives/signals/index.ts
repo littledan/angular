@@ -13,4 +13,5 @@ export {REACTIVE_NODE, Reactive, ReactiveNode, SIGNAL, consumerAfterComputation,
 export {SIGNAL_NODE, SignalGetter, SignalNode, createSignal, setPostSignalSetFn, signalSetFn, signalUpdateFn} from './src/signal';
 export {Watch, WatchCleanupFn, WatchCleanupRegisterFn, createWatch} from './src/watch';
 export {setAlternateWeakRefImpl} from './src/weak_ref';
+export {Signal as SignalWrapper} from "./src/wrapper";
 

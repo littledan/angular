@@ -40,6 +40,20 @@ export type ComputedGetter<T> = (() => T)&{
   [SIGNAL]: ComputedNode<T>;
 };
 
+export function computedGet<T>(node: ComputedNode<T>) {
+  // Check if the value needs updating before returning it.
+  producerUpdateValueVersion(node);
+
+  // Record that someone looked at this signal.
+  producerAccessed(node);
+
+  if (node.value === ERRORED) {
+    throw node.error;
+  }
+
+  return node.value;
+}
+
 /**
  * Create a computed signal which derives a reactive value from an expression.
  */
@@ -47,19 +61,7 @@ export function createComputed<T>(computation: () => T): ComputedGetter<T> {
   const node: ComputedNode<T> = Object.create(COMPUTED_NODE);
   node.computation = computation;
 
-  const computed = () => {
-    // Check if the value needs updating before returning it.
-    producerUpdateValueVersion(node);
-
-    // Record that someone looked at this signal.
-    producerAccessed(node);
-
-    if (node.value === ERRORED) {
-      throw node.error;
-    }
-
-    return node.value;
-  };
+  const computed = () => computedGet(node);
   (computed as ComputedGetter<T>)[SIGNAL] = node;
   return computed as unknown as ComputedGetter<T>;
 }
@@ -113,7 +115,7 @@ const COMPUTED_NODE = /* @__PURE__ */ (() => {
       const prevConsumer = consumerBeforeComputation(node);
       let newValue: unknown;
       try {
-        newValue = node.computation();
+        newValue = node.computation.call(node.wrapper);
       } catch (err) {
         newValue = ERRORED;
         node.error = err;
@@ -122,7 +124,7 @@ const COMPUTED_NODE = /* @__PURE__ */ (() => {
       }
 
       if (oldValue !== UNSET && oldValue !== ERRORED && newValue !== ERRORED &&
-          node.equal(oldValue, newValue)) {
+          node.equal.call(node.wrapper, oldValue, newValue)) {
         // No change to `valueVersion` - old and new values are
         // semantically equivalent.
         node.value = oldValue;
