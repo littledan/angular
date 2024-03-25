@@ -183,6 +183,15 @@ describe("Watcher", () => {
     expect(computedOutput).toEqual(1998);
 
     expect(watcher.getPending()).toHaveSize(0);
+
+    // Adding any other effect after an unwatch should work as expected
+    effect(() => {
+       output = stateSignal.get();
+       return () => {};
+    });
+
+    stateSignal.set(300);
+    flushPending();
   });
 });
 

@@ -254,6 +254,7 @@ export namespace Signal {
 
           node.producerNode.length--;
           node.producerIndexOfThis.length--;
+          node.nextProducerIndex--;
 
           if (idx < node.producerNode.length) {
             const idxConsumer = node.producerIndexOfThis[idx];
